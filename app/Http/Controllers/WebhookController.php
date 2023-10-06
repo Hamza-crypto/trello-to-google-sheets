@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 
 class WebhookController extends Controller
 {
+
     public function updateBoard(Request $request)
     {
+        app('log')->channel('api')->info($request->all());
         // Get the JSON data from the request
         $response = $request->json()->all();
 
@@ -70,15 +72,17 @@ class WebhookController extends Controller
 
                 //check for card record in the sheet
 
+                $cardExists = false;
                 foreach ($rows as $index => $row) {
                     $sheetColumn = $row[0];
                     $SheetCardid = trim(explode("//", $sheetColumn)[1]);
                     $SheetCardName = trim(explode("//", $sheetColumn)[0]);
-                    //return $SheetCardid. " and name is ". $SheetCardName;
 
                     //...............if there is a record, update its specific cell ....................
 
                     if ($ResponseCardId == $SheetCardid) {
+
+                        //return $SheetCardid. " and name is ". $SheetCardName;
 
                         $rowIndex = $index + 2;
                         $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
@@ -96,34 +100,38 @@ class WebhookController extends Controller
 
                         // Update the target cell with the new value
                         Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
+                        $cardExists = true;
                         break;
-                    } else {
-
-                        //...............if there is not a card record, create a new record ................. 
-
-                        $newRecord = [];
-                        //return $header;
-                        foreach ($header as $index => $header) {
-                            if ($index == 0) {
-                                $newRecord[$index] = $ResponseCardName . "//" . $ResponseCardId;
-                                continue;
-                            }
-                            if ($index == $colIndexNemeric) {
-                                //set the response checket item value to this index
-                                $newRecord[$index] = $newValue;
-                                continue;
-                            } else {
-                                $newRecord[$index] = "";
-                            }
-                        }
-
-                        //append new record
-
-                        Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->append([$newRecord]);
-
-                        //return $newRecord;
-
                     }
+                }
+                //...............if there is not a card record, create a new record ................. 
+
+                if ($cardExists === false) {
+
+                    $newRecord = [];
+                    //return $header;
+                    //dd($header);
+                    //return $header;
+
+                    foreach ($header as $index => $headerItem) {
+                        if ($index == 0) {
+                            $newRecord[$index] = $ResponseCardName . "//" . $ResponseCardId;
+                            continue;
+                        }
+                        if ($index == $colIndexNemeric) {
+                            //set the response checket item value to this index
+                            $newRecord[$index] = $newValue;
+                            continue;
+                        } else {
+                            $newRecord[$index] = "";
+                        }
+                    }
+
+                    //append new record
+
+                    Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->append([$newRecord]);
+
+                    //return $newRecord;
                 }
             } else
 
