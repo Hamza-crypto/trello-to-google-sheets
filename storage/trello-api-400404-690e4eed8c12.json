@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "trello-api-400404",
+  "private_key_id": "690e4eed8c12aec368982de28f76cd3969db3424",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDQEtUJfySEinre\ntqVmkL9zutmsjc+3MXVE8KPgq0T93efIbUxQBzZ2HUIJo1m+oJGTVNZmxVIJ98Eo\nrOe3HscGqpr0ZK/Hu3q1UWit7NhVUxxwgHCmAXXiMTT8tKDWa8FECHhp7DoMcz38\nxfXs1Wn62uAAT43O1fDi0F0V85plWBzmmMDbb2I5gdMxiLbv3kcBVhrBKN0QLhvL\n5/SGDEntHVn9VelYgQiEoaC0bV+5bNZZ0FeUXAQ/U40yR/6ZYfpamp/b1TetNhfm\n4prxHPwXZa6VJZWFUVZPIP1AkWbglAXe06X1Mxi+hND5iq1xLEIvuHIr2p40CiI2\ngIlSvb+/AgMBAAECggEAGv3OZ/B31r+2B60O0LrHMyaSdSliQCPoz/wdbhgZl4sR\nNbVD+H+vB2xtNB3eFvXyXHfdZjCDn2plwraHSoByFgHMnxZunQzLcrjwSNuYBp2E\n620l78rxtVlnw75UvOv2grJMmIT91L6gVGmDqOjYWiPJehDX1vR2zp1z7dSPe0TS\nfU6S9HJvxUn+ciJTEuESLaDle30YZq15m/gO9I//X+BOkMaBIaFb+Pc/lQdserQB\nE6gjvsfXxnBua5Hig4zl/7bUXSxa306OxpNA1UGFO0p0eGkn88VgugEnnDTeBbKp\nC+y1o6LdkdWMOX6PHiNVcac9KmKDXNwYJiAtKlLsZQKBgQDo5XKhmEBASLiQxTzU\nmlgi4Z/O2fRG2/qQdv+aw4XEZZLeP3aDjTm2zLW9N9+1MsMufwV3ZAP3TBlMsyxg\nQ6QvKcKRGttfsBChwPp6fy0wE5rT4gLOcYWGeHiB3aj8lJWNwtgF3o7kR4NHNlie\n6OFQRQqQn1GrUqtVpN6ncvA4awKBgQDktv7RUOdO4F3ydLRl1BjJVEVbWq8SbJNK\n997aOwGfajDmo1OWwK3oqWprUJ6LOG5ubPOD6XjPpeC3lzvWD0vVBOKYN25oPLNV\nUlYszk+KGscNYgJpOClyPOSgvrDhlbvO4/dczpzSO4Ag7NUU4VJCg0SZRpBGDfAX\nQYI5uhl6/QKBgEGrCLJ1ypAVsSzo4GkWCAn10mix3gXo2vLHCvVpchtZhJr0DAe1\n13Mqr4fl7EccRBqlKDZs1g1xwKR21OljyTSfMsRVbUvCyj3Bux61I1mt/XcHAEGT\nktHCwD/l71Mg1jZ9nQmyolnNrD91HHHaOkW24e67bXzAN51TepB+gSt3AoGACq+a\nHEGBbSgCe6+ENjXAqrdrPidwgpXcE+ac3Olg3AfkHQKIh0SdW39+32C2555NWo9w\nmTsxT9JaO3mvbALu8hb2V1JPsEMVxejA6fsBsFwr7K4lmrDrDtFVhUUjkoaibbos\n9oMYxKHPDLrEAeO9Kipj7B1l5EAGda+z2+qcAikCgYB//DFrdcE8oYNz6U2Ia6O+\nRK5QMdz7j1X4rPwXEH3SdGFhlUaXo7myn8hVdpdkA+tn8p2q2ZcFtGJ/E6IwWrms\navOwi9IeP1/gXqzoUYHqMZNEebUokAvFcftpuOnC3idMrub7lLkxG/CP/wwsdVpd\n3ktoMouf/iw6iP7A6cDftw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "google-sheat-api@trello-api-400404.iam.gserviceaccount.com",
+  "client_id": "102197607999360906217",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/google-sheat-api%40trello-api-400404.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
