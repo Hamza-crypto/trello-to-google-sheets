@@ -18,7 +18,3 @@ use App\Http\Controllers\WebhookController;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
-
-
-
-Route::post('/update/board', [WebhookController::class, 'updateBoard']);

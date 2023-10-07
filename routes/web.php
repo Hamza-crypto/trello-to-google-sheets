@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleSheetController;
 use Illuminate\Support\Facades\Artisan;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
+use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,3 +33,5 @@ Route::get('logs', [LogViewerController::class, 'index']);
 Route::get('reset-all', function () {
     Artisan::call('migrate:fresh --seed');
 });
+
+Route::match(['post', 'head'], '/update/board', [WebhookController::class, 'updateBoard']);
