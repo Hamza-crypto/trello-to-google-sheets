@@ -38,7 +38,7 @@ class DashboardController extends Controller
     public function FetchLists(Request $request)
     {
         $boardId = $request->input('shortLink');
-        //initializing sheat 
+        //initializing sheat
         $sheat = [];
 
 
@@ -143,8 +143,8 @@ class DashboardController extends Controller
                             }
                             //store celldata in the rowData
                             $rowData[$cellIndex] = $cellData;
-                            
-                            //store the card name 
+
+                            //store the card name
                             if ($atleatOneItemCheck === true) {
                                 $cardName = $card['name'];
                                 $dardId = $card['id'];

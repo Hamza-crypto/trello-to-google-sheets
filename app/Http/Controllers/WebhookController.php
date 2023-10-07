@@ -10,7 +10,7 @@ class WebhookController extends Controller
 
     public function updateBoard(Request $request)
     {
-        app('log')->channel('api')->info($request->all());
+        app('log')->channel('webhook')->info($request->all());
         // Get the JSON data from the request
         $response = $request->json()->all();
 
@@ -104,7 +104,7 @@ class WebhookController extends Controller
                         break;
                     }
                 }
-                //...............if there is not a card record, create a new record ................. 
+                //...............if there is not a card record, create a new record .................
 
                 if ($cardExists === false) {
 
@@ -212,8 +212,8 @@ class WebhookController extends Controller
 
 
 //....................... request to create webhook on webhook.site...................................
-// λ curl -X POST ^ 
-// -H "Content-Type: application/json" ^ 
+// λ curl -X POST ^
+// -H "Content-Type: application/json" ^
 // -d "{\"key\": \"3a485c0c4218c02d868a0dbbd89e68a0\",
 //     \"callbackURL\": \"https://webhook.site/ff4a4824-249e-45e9-9475-5f5b3c8da3d5\",
 //     \"idModel\":\"64e79e01e1553c261d3b7a6c\",
