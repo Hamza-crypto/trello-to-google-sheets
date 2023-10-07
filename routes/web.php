@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleSheetController;
+use Illuminate\Support\Facades\Artisan;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 /*
@@ -27,3 +28,7 @@ Route::post('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fe
 Route::get('/accessSheet', [GoogleSheetController::class, 'index'])->name('accessSheet');
 
 Route::get('logs', [LogViewerController::class, 'index']);
+
+Route::get('reset-all', function () {
+    Artisan::call('migrate:fresh --seed');
+});
