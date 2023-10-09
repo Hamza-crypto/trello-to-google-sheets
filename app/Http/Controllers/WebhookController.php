@@ -59,7 +59,7 @@ class WebhookController extends Controller
 
                     //return $newValue;
 
-                    //get the column index
+                    //..........get the column index...........
 
                     // Remove non-alphanumeric characters from $checklistName and header row
                     $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $checklistName);
@@ -70,7 +70,7 @@ class WebhookController extends Controller
                     $colIndex = chr(65 + $colIndexNemeric);
                     //return $colIndex;
 
-                    //check for card record in the sheet
+                    //....check for card record in the sheet....
 
                     $cardExists = false;
                     foreach ($rows as $index => $row) {
@@ -91,8 +91,15 @@ class WebhookController extends Controller
                             $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValue);
 
 
-                            // Check if the cell is empty or contains a value
+                            // Check if the contains a value
                             if (!empty($ExistingCellValue)) {
+                                //check if there is any repeating value
+
+
+
+                                //check if the new checked value is already in the existing value
+
+
                                 // If the cell contains a value, append the new value to the existing value
                                 $newValue = $ExistingCellValue .  "," . $newValue;
                             }
@@ -115,6 +122,7 @@ class WebhookController extends Controller
                         //return $header;
 
                         foreach ($header as $index => $headerItem) {
+                            //place card name and card id in the frist column or name column 
                             if ($index == 0) {
                                 $newRecord[$index] = $ResponseCardName . "//" . $ResponseCardId;
                                 continue;
@@ -134,79 +142,98 @@ class WebhookController extends Controller
 
                         //return $newRecord;
                     }
-                } else
-
-                    //..........................................................................................................
-                    //case2 ............................if uncompleted state or unchecked..........................................
-                    //....................................................................................................
+                }
 
 
-                    if ($actionTypeDetail == "action_marked_checkitem_incomplete") {
-
-                        //get the column index
-
-                        // Remove non-alphanumeric characters from $checklistName and header row
-                        $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $checklistName);
-                        $cleanedHeaderRow = array_map(function ($str) {
-                            return preg_replace('/[^a-zA-Z0-9]/', '', $str);
-                        }, $header);
-                        $colIndexNemeric = array_search(strtolower($cleanedName), array_map('strtolower', $cleanedHeaderRow));
-                        $colIndex = chr(65 + $colIndexNemeric);
-                        //return $colIndex;
+                //..........................................................................................................
+                //case2 ............................if uncompleted state or unchecked..........................................
+                //....................................................................................................
 
 
-                        //check for card record in the sheet
+                if ($actionTypeDetail == "action_marked_checkitem_incomplete") {
 
-                        foreach ($rows as $index => $row) {
-                            $sheetColumn = $row[0];
-                            $SheetCardid = trim(explode("//", $sheetColumn)[1]);
-                            $SheetCardName = trim(explode("//", $sheetColumn)[0]);
+                    //get the column index
 
-                            //...............if there is a record, update its specific cell ....................
+                    // Remove non-alphanumeric characters from $checklistName and header row
+                    $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $checklistName);
+                    $cleanedHeaderRow = array_map(function ($str) {
+                        return preg_replace('/[^a-zA-Z0-9]/', '', $str);
+                    }, $header);
+                    $colIndexNemeric = array_search(strtolower($cleanedName), array_map('strtolower', $cleanedHeaderRow));
+                    $colIndex = chr(65 + $colIndexNemeric);
+                    //return $colIndex;
 
-                            if ($ResponseCardId == $SheetCardid) {
-                                // return $SheetCardid . " and name is " . $SheetCardName;
 
-                                $rowIndex = $index + 2;
-                                $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
-                                $ExistingCellValueArray = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
-                                $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValueArray);
+                    //check for card record in the sheet
 
-                                //return $ExistingCellValue;
-                                //remove unchecked item value from the existing cell value
-                                $uncheckedValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
-                                $newValue = null;
+                    foreach ($rows as $index => $row) {
+                        $sheetColumn = $row[0];
+                        $SheetCardid = trim(explode("//", $sheetColumn)[1]);
+                        $SheetCardName = trim(explode("//", $sheetColumn)[0]);
 
-                                // Check if the string contains ',', it means there are more than one values
-                                if (strpos($ExistingCellValue, ',') !== false) {
-                                    //echo "String contains a , symbol.";
+                        //...............if there is a record, update its specific cell ....................
 
-                                    $trimmedExistingCellValues = array_map('trim', explode(",", $ExistingCellValue));
-                                    //return $trimmedExistingCellValues;
-                                    foreach ($trimmedExistingCellValues as $index => $value) {
-                                        //ignore the unchecked value
-                                        if (trim($uncheckedValue) !== $value) {
-                                            if ($newValue == null) {
-                                                $newValue = $value;
-                                            } else {
-                                                $newValue = $newValue . "," . $value;
-                                            }
-                                        }
-                                    }
-                                    //return $newValue;
+                        if ($ResponseCardId == $SheetCardid) {
+                            // return $SheetCardid . " and name is " . $SheetCardName;
+
+                            $rowIndex = $index + 2;
+                            $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
+                            $ExistingCellValueArray = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
+                            $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValueArray);
+
+                            //return $ExistingCellValue;
+                            //remove unchecked item value from the existing cell value
+                            $uncheckedValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
+                            $newValue = null;
+
+                            // Check if the string contains ',', it means there are more than one values
+                            if (strpos($ExistingCellValue, ',') !== false) {
+                                //echo "String contains a , symbol.";
+
+                                $trimmedExistingCellValues = array_map('trim', explode(",", $ExistingCellValue));
+                                //return $trimmedExistingCellValues;
+                                // foreach ($trimmedExistingCellValues as $index => $value) {
+                                //     //ignore the unchecked value
+                                //     if (trim($uncheckedValue) !== $value) {
+                                //         if ($newValue == null) {
+                                //             $newValue = $value;
+                                //         } else {
+                                //             $newValue = $newValue . "," . $value;
+                                //         }
+                                //     }
+                                // }
+
+                                // Define a callback function to filter out 'uncheckedValue'
+                                $filteredArray = array_filter($trimmedExistingCellValues, function ($value) use ($uncheckedValue) {
+                                    return $value !== trim($uncheckedValue);
+                                });
+                                // Check if the filtered array has more than one item
+                                if (count($filteredArray) > 1) {
+                                    // Convert the filtered array to a comma-separated string
+                                    $newValue = implode(',', $filteredArray);
                                 } else {
-                                    //echo "String does not contain a , symbol.";
-                                    $newValue = "";
+                                    // If there's only one item or none in the filtered array, return an empty string
+                                    if (count($filteredArray)  == 1) {
+                                        $newValue = $filteredArray[0];
+                                    } else {
+                                        $newValue = "";
+                                    }
                                 }
 
-                                //return "existing cell value is " . $ExistingCellValue . " at index " . $targetCell . " unchecked value is " . $uncheckedValue;
-
-                                // Update the target cell with the new value
-                                Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
-                                break;
+                                //return $newValue;
+                            } else {
+                                //echo "String does not contain a , symbol.";
+                                $newValue = "";
                             }
+
+                            //return "existing cell value is " . $ExistingCellValue . " at index " . $targetCell . " unchecked value is " . $uncheckedValue;
+
+                            // Update the target cell with the new value
+                            Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
+                            break;
                         }
                     }
+                }
             } //end state update clause
         }
     }
