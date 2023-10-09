@@ -137,7 +137,7 @@ class DashboardController extends Controller
                                     if ($cellData === null) {
                                         $cellData = $checkItemName;
                                     } else {
-                                        $cellData = $cellData . "/" . $checkItemName;
+                                        $cellData = $cellData . "," . $checkItemName;
                                     }
                                 }
                             }
@@ -176,9 +176,9 @@ class DashboardController extends Controller
 
         $rows_style = (new Style())->setFontSize(12);
 
-        $filePath = storage_path('app/temp/sheat.xlsx');
-        $excelFile = new FastExcel($structuredSheat);
-        $excelFile->export($filePath);
+        // $filePath = storage_path('app/temp/sheat.xlsx');
+        // $excelFile = new FastExcel($structuredSheat);
+        // $excelFile->export($filePath);
         //return $structuredSheat;
 
         //return $excelFile;

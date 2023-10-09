@@ -14,130 +14,50 @@ class WebhookController extends Controller
         // Get the JSON data from the request
         $response = $request->json()->all();
 
-        //get action type
-        $ResponseActionType = $response['action']['type'];
-
-        //get action data
-        $ResponseActionData = $response['action']['data'];
-
-        //get board id
-        $ResponseboardId = $response['action']['data']['board']['id'];
-
-        //get card
-        $ResponseCardId = $response['action']['data']['card']['id'];
-        $ResponseCardName = $response['action']['data']['card']['name'];
-
-        //accessing sheet
-        $spreadsheetId = env('GOOGLE_SPREADSHEET_ID');
-        $rows = Sheets::spreadsheet($spreadsheetId)->sheet('sheet1')->all();
-
-        // Extract the header (first row) from the sheet data
-        $header = [];
-        if (!empty($rows)) {
-            $header = array_shift($rows);
-        }
 
 
-        //..........................................................................................
-        //..........................update check item state on card.................................
-        //..........................................................................................
+        if ($response['action']['type']) {
 
-        if ($ResponseActionType == "updateCheckItemStateOnCard") {
+            //get action type
+            $ResponseActionType = $response['action']['type'];
 
-            //get the checklist name
-            $checklistName = $response['action']['data']['checklist']['name'];
+            //get card
+            $ResponseCardId = $response['action']['data']['card']['id'];
+            $ResponseCardName = $response['action']['data']['card']['name'];
 
-            //get the type of state update
-            $actionTypeDetail = $response['action']['display']['translationKey'];
+            //accessing sheet
+            $spreadsheetId = env('GOOGLE_SPREADSHEET_ID');
+            $rows = Sheets::spreadsheet($spreadsheetId)->sheet('sheet1')->all();
 
-            //case1........................if completed state or checked............................
-
-            if ($actionTypeDetail == "action_completed_checkitem") {
-
-                //get the new checked value
-                $newValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
-
-                //return $newValue;
-
-                //get the column index
-
-                // Remove non-alphanumeric characters from $checklistName and header row
-                $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $checklistName);
-                $cleanedHeaderRow = array_map(function ($str) {
-                    return preg_replace('/[^a-zA-Z0-9]/', '', $str);
-                }, $header);
-                $colIndexNemeric = array_search(strtolower($cleanedName), array_map('strtolower', $cleanedHeaderRow));
-                $colIndex = chr(65 + $colIndexNemeric);
-                //return $colIndex;
-
-                //check for card record in the sheet
-
-                $cardExists = false;
-                foreach ($rows as $index => $row) {
-                    $sheetColumn = $row[0];
-                    $SheetCardid = trim(explode("//", $sheetColumn)[1]);
-                    $SheetCardName = trim(explode("//", $sheetColumn)[0]);
-
-                    //...............if there is a record, update its specific cell ....................
-
-                    if ($ResponseCardId == $SheetCardid) {
-
-                        //return $SheetCardid. " and name is ". $SheetCardName;
-
-                        $rowIndex = $index + 2;
-                        $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
-                        $ExistingCellValue = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
-                        $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValue);
+            // Extract the header (first row) from the sheet data
+            $header = [];
+            if (!empty($rows)) {
+                $header = array_shift($rows);
+            }
 
 
-                        // Check if the cell is empty or contains a value
-                        if (!empty($ExistingCellValue)) {
-                            // If the cell contains a value, append the new value to the existing value
-                            $newValue = $ExistingCellValue .  "/" . $newValue;
-                        }
+            //..........................................................................................
+            //..........................update check item state on card.................................
+            //..........................................................................................
 
-                        //return "existing cell value is ".$ExistingCellValue. " at index " . $targetCell. " new value is ". $newValue;
+            if ($ResponseActionType == "updateCheckItemStateOnCard") {
 
-                        // Update the target cell with the new value
-                        Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
-                        $cardExists = true;
-                        break;
-                    }
-                }
-                //...............if there is not a card record, create a new record .................
+                //get the checklist name
+                $checklistName = $response['action']['data']['checklist']['name'];
 
-                if ($cardExists === false) {
+                //get the type of state update
+                $actionTypeDetail = $response['action']['display']['translationKey'];
 
-                    $newRecord = [];
-                    //return $header;
-                    //dd($header);
-                    //return $header;
+                //......................................................................................
+                //case1........................if completed state or checked............................
+                //......................................................................................
 
-                    foreach ($header as $index => $headerItem) {
-                        if ($index == 0) {
-                            $newRecord[$index] = $ResponseCardName . "//" . $ResponseCardId;
-                            continue;
-                        }
-                        if ($index == $colIndexNemeric) {
-                            //set the response checket item value to this index
-                            $newRecord[$index] = $newValue;
-                            continue;
-                        } else {
-                            $newRecord[$index] = "";
-                        }
-                    }
+                if ($actionTypeDetail == "action_completed_checkitem") {
 
-                    //append new record
+                    //get the new checked value
+                    $newValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
 
-                    Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->append([$newRecord]);
-
-                    //return $newRecord;
-                }
-            } else
-
-                //case2 ............................if uncompleted state or unchecked..........................................
-
-                if ($actionTypeDetail == "action_marked_checkitem_incomplete") {
+                    //return $newValue;
 
                     //get the column index
 
@@ -150,9 +70,9 @@ class WebhookController extends Controller
                     $colIndex = chr(65 + $colIndexNemeric);
                     //return $colIndex;
 
-
                     //check for card record in the sheet
 
+                    $cardExists = false;
                     foreach ($rows as $index => $row) {
                         $sheetColumn = $row[0];
                         $SheetCardid = trim(explode("//", $sheetColumn)[1]);
@@ -161,49 +81,134 @@ class WebhookController extends Controller
                         //...............if there is a record, update its specific cell ....................
 
                         if ($ResponseCardId == $SheetCardid) {
-                            // return $SheetCardid . " and name is " . $SheetCardName;
+
+                            //return $SheetCardid. " and name is ". $SheetCardName;
 
                             $rowIndex = $index + 2;
                             $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
-                            $ExistingCellValueArray = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
-                            $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValueArray);
+                            $ExistingCellValue = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
+                            //cleaning square brackets from existing value returned by google sheets
+                            $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValue);
 
-                            //return $ExistingCellValue;
-                            //remove unchecked item value from the existing cell value
-                            $uncheckedValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
-                            $newValue = null;
 
-                            // Check if the string contains '/', it means there are more than one values
-                            if (strpos($ExistingCellValue, '/') !== false) {
-                                //echo "String contains a / symbol.";
-
-                                $trimmedExistingCellValues = array_map('trim', explode("\\/", $ExistingCellValue));
-                                //return $trimmedExistingCellValues;
-                                foreach ($trimmedExistingCellValues as $index => $value) {
-                                    //ignore the unchecked value
-                                    if (trim($uncheckedValue) !== $value) {
-                                        if ($newValue == null) {
-                                            $newValue = $value;
-                                        } else {
-                                            $newValue = $newValue . "/" . $value;
-                                        }
-                                    }
-                                }
-                                //return $newValue;
-                            } else {
-                                //echo "String does not contain a / symbol.";
-                                $newValue = "";
+                            // Check if the cell is empty or contains a value
+                            if (!empty($ExistingCellValue)) {
+                                // If the cell contains a value, append the new value to the existing value
+                                $newValue = $ExistingCellValue .  "," . $newValue;
                             }
 
-                            //return "existing cell value is " . $ExistingCellValue . " at index " . $targetCell . " unchecked value is " . $uncheckedValue;
+                            //return "existing cell value is ".$ExistingCellValue. " at index " . $targetCell. " new value is ". $newValue;
 
                             // Update the target cell with the new value
                             Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
+                            $cardExists = true;
                             break;
                         }
                     }
-                }
-        } //end state update clause
+                    //...............if there is not a card record, create a new record .................
+
+                    if ($cardExists === false) {
+
+                        $newRecord = [];
+                        //return $header;
+                        //dd($header);
+                        //return $header;
+
+                        foreach ($header as $index => $headerItem) {
+                            if ($index == 0) {
+                                $newRecord[$index] = $ResponseCardName . "//" . $ResponseCardId;
+                                continue;
+                            }
+                            if ($index == $colIndexNemeric) {
+                                //set the response checket item value to this index
+                                $newRecord[$index] = $newValue;
+                                continue;
+                            } else {
+                                $newRecord[$index] = "";
+                            }
+                        }
+
+                        //append new record
+
+                        Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->append([$newRecord]);
+
+                        //return $newRecord;
+                    }
+                } else
+
+                    //..........................................................................................................
+                    //case2 ............................if uncompleted state or unchecked..........................................
+                    //....................................................................................................
+
+
+                    if ($actionTypeDetail == "action_marked_checkitem_incomplete") {
+
+                        //get the column index
+
+                        // Remove non-alphanumeric characters from $checklistName and header row
+                        $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $checklistName);
+                        $cleanedHeaderRow = array_map(function ($str) {
+                            return preg_replace('/[^a-zA-Z0-9]/', '', $str);
+                        }, $header);
+                        $colIndexNemeric = array_search(strtolower($cleanedName), array_map('strtolower', $cleanedHeaderRow));
+                        $colIndex = chr(65 + $colIndexNemeric);
+                        //return $colIndex;
+
+
+                        //check for card record in the sheet
+
+                        foreach ($rows as $index => $row) {
+                            $sheetColumn = $row[0];
+                            $SheetCardid = trim(explode("//", $sheetColumn)[1]);
+                            $SheetCardName = trim(explode("//", $sheetColumn)[0]);
+
+                            //...............if there is a record, update its specific cell ....................
+
+                            if ($ResponseCardId == $SheetCardid) {
+                                // return $SheetCardid . " and name is " . $SheetCardName;
+
+                                $rowIndex = $index + 2;
+                                $targetCell = $colIndex . ($rowIndex); //i.e A1, B3, C8
+                                $ExistingCellValueArray = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->get();
+                                $ExistingCellValue = str_replace(['[', ']', '"'], '', $ExistingCellValueArray);
+
+                                //return $ExistingCellValue;
+                                //remove unchecked item value from the existing cell value
+                                $uncheckedValue = $response['action']['display']['entities']['checkitem']['nameHtml'];
+                                $newValue = null;
+
+                                // Check if the string contains ',', it means there are more than one values
+                                if (strpos($ExistingCellValue, ',') !== false) {
+                                    //echo "String contains a , symbol.";
+
+                                    $trimmedExistingCellValues = array_map('trim', explode(",", $ExistingCellValue));
+                                    //return $trimmedExistingCellValues;
+                                    foreach ($trimmedExistingCellValues as $index => $value) {
+                                        //ignore the unchecked value
+                                        if (trim($uncheckedValue) !== $value) {
+                                            if ($newValue == null) {
+                                                $newValue = $value;
+                                            } else {
+                                                $newValue = $newValue . "," . $value;
+                                            }
+                                        }
+                                    }
+                                    //return $newValue;
+                                } else {
+                                    //echo "String does not contain a , symbol.";
+                                    $newValue = "";
+                                }
+
+                                //return "existing cell value is " . $ExistingCellValue . " at index " . $targetCell . " unchecked value is " . $uncheckedValue;
+
+                                // Update the target cell with the new value
+                                Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($targetCell)->update([[$newValue]]);
+                                break;
+                            }
+                        }
+                    }
+            } //end state update clause
+        }
     }
 }
 
