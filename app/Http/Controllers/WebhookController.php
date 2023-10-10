@@ -93,15 +93,31 @@ class WebhookController extends Controller
 
                             // Check if the contains a value
                             if (!empty($ExistingCellValue)) {
-                                //check if there is any repeating value
 
+                                // Check if the string contains ',', it means there are more than one values
+                                if (strpos($ExistingCellValue, ',') !== false) {
 
+                                    $trimmedExistingCellValues = array_map('trim', explode(",", $ExistingCellValue));
+                                    $uniqueArray = array_unique($trimmedExistingCellValues);
+                                    // Define a callback function to filter out 'checkedValue'
+                                    $filteredArray = array_filter($uniqueArray, function ($value) use ($newValue) {
+                                        return $value !== trim($newValue);
+                                    });
 
-                                //check if the new checked value is already in the existing value
+                                    // Check if the filtered array has one or more than one item
+                                    if (count($filteredArray) >= 1) {
+                                        // Convert the filtered array to a comma-separated string
+                                        $filteredExistingString = implode(',', $filteredArray);
+                                        $newValue = $filteredExistingString .  "," . $newValue;
+                                    } //else it will do nothing and new value will be checked item
 
-
-                                // If the cell contains a value, append the new value to the existing value
-                                $newValue = $ExistingCellValue .  "," . $newValue;
+                                    //return $newValue;
+                                } else {
+                                    if (trim($ExistingCellValue) != trim($newValue)) {
+                                        // the cell contains one value, append the new value to the existing value
+                                        $newValue = $ExistingCellValue .  "," . $newValue;
+                                    }
+                                }
                             }
 
                             //return "existing cell value is ".$ExistingCellValue. " at index " . $targetCell. " new value is ". $newValue;
@@ -191,20 +207,12 @@ class WebhookController extends Controller
                                 //echo "String contains a , symbol.";
 
                                 $trimmedExistingCellValues = array_map('trim', explode(",", $ExistingCellValue));
-                                //return $trimmedExistingCellValues;
-                                // foreach ($trimmedExistingCellValues as $index => $value) {
-                                //     //ignore the unchecked value
-                                //     if (trim($uncheckedValue) !== $value) {
-                                //         if ($newValue == null) {
-                                //             $newValue = $value;
-                                //         } else {
-                                //             $newValue = $newValue . "," . $value;
-                                //         }
-                                //     }
-                                // }
+
+                                // Remove repeating values
+                                $uniqueArray = array_unique($trimmedExistingCellValues);
 
                                 // Define a callback function to filter out 'uncheckedValue'
-                                $filteredArray = array_filter($trimmedExistingCellValues, function ($value) use ($uncheckedValue) {
+                                $filteredArray = array_filter($uniqueArray, function ($value) use ($uncheckedValue) {
                                     return $value !== trim($uncheckedValue);
                                 });
                                 // Check if the filtered array has more than one item
