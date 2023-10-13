@@ -6,8 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Rap2hpoutre\FastExcel\FastExcel;
 use OpenSpout\Common\Entity\Style\Style;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
+
 
 class DashboardController extends Controller
 {
@@ -38,7 +37,7 @@ class DashboardController extends Controller
     public function FetchLists(Request $request)
     {
         $boardId = $request->input('shortLink');
-        //initializing sheat
+        //initializing sheat 
         $sheat = [];
 
 
@@ -127,13 +126,21 @@ class DashboardController extends Controller
 
                             //get each checkItems array in the card checklist that will be the cell values
                             $atleatOneItemCheck = false;
-                            $id = null;
+                            //$id = null;
                             foreach ($checkItems as $checkItem) {
                                 if ($checkItem['state'] == "complete") {
-
-                                    $checkItemName = $checkItem['name'];
                                     $atleatOneItemCheck = true;
-                                    //store all checked names in a string variable separate by "/"
+
+                                    if (strtolower($cleanedName) == strtolower("NFPA80FAILURES")) {
+                                        $value = $checkItem['name'];
+                                        // Use preg_match to extract the number before the dot
+                                        preg_match('/\*\*(\d+)\./', $value, $matches);
+                                        $checkItemName = $matches[1];
+                                    } else {
+                                        $checkItemName = $checkItem['name'];
+                                    }
+
+                                    //store all checked names in a string variable separate by ","
                                     if ($cellData === null) {
                                         $cellData = $checkItemName;
                                     } else {
@@ -144,7 +151,7 @@ class DashboardController extends Controller
                             //store celldata in the rowData
                             $rowData[$cellIndex] = $cellData;
 
-                            //store the card name
+                            //store the card name 
                             if ($atleatOneItemCheck === true) {
                                 $cardName = $card['name'];
                                 $dardId = $card['id'];
@@ -176,9 +183,9 @@ class DashboardController extends Controller
 
         $rows_style = (new Style())->setFontSize(12);
 
-        // $filePath = storage_path('app/temp/sheat.xlsx');
-        // $excelFile = new FastExcel($structuredSheat);
-        // $excelFile->export($filePath);
+        $filePath = storage_path('app/temp/sheat.xlsx');
+        $excelFile = new FastExcel($structuredSheat);
+        $excelFile->export($filePath);
         //return $structuredSheat;
 
         //return $excelFile;
