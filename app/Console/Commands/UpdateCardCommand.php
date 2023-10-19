@@ -37,9 +37,10 @@ class UpdateCardCommand extends Command
         $lastExecution = LastExecutionTimestamp::latest('id')->first();
 
         if (
-            $lastExecution &&
-            Carbon::now()->diffInMinutes($lastExecution->last_execution) >= 1 &&
-            Carbon::now()->diffInMinutes($lastExecution->last_execution) < 2
+            $lastExecution 
+            // &&
+            // Carbon::now()->diffInMinutes($lastExecution->last_execution) >= 1 &&
+            // Carbon::now()->diffInMinutes($lastExecution->last_execution) < 2
         ) {
             // Execute your logic here
 
@@ -56,11 +57,13 @@ class UpdateCardCommand extends Command
             }
 
             Log::info($header);
+            $apiKey = env('TRELLO_API_KEY');
+            $accessToken = env('TRELLO_ACCESS_TOKEN');
 
             //parameters for api call
             $queryParameters = [
-                'key' => '3a485c0c4218c02d868a0dbbd89e68a0', // Replace with your Trello API key
-                'token' => 'ATTA3361530c90d0c67aad38b12b462142ea8a83f6fb3e55c91d0f7ba92610d213860CC4158C', // Replace with your Trello access token
+                'key' => $apiKey,
+                'token' => $accessToken,
             ];
 
             // Get pending tasks from webhook_tasks table
@@ -93,11 +96,16 @@ class UpdateCardCommand extends Command
 
                     foreach ($header as $headerIndex => $headerItem) {
                         if ($headerIndex == 0) {
-                            $newRecord[$headerIndex] = $webhookCardName . "//" . $webhookCardId;
+                            $newRecord[$headerIndex] = $webhookCardName;
                             continue;
                         }
 
                         $cleanedHeaderItem = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $headerItem));
+
+                        if($cleanedHeaderItem=="cardid"){
+                            $newRecord[$headerIndex] = $webhookCardId;
+                            continue;
+                        }
 
                         foreach ($checkListsData as $index => $data) {
                             $name = $data['name'];
@@ -146,13 +154,14 @@ class UpdateCardCommand extends Command
                 if ($atleatOneItemCheck) {
                     $cardUpdated = false;
 
+                    $CardIdColIndex = array_search(strtolower("Card Id"), array_map('strtolower', $header));
+                    Log::info('Id index : '. $CardIdColIndex);
+
                     //check for card record in the sheet, if record is present update it
                     foreach ($rows as $index => $row) {
-                        if (isset($row[0])) {
-                            $sheetColumn = $row[0];
-                            $SheetCardid = trim(explode("//", $sheetColumn)[1]);
-                            $SheetCardName = trim(explode("//", $sheetColumn)[0]);
-
+                        if (isset($row[$CardIdColIndex])) {
+                            
+                            $SheetCardid = $row[$CardIdColIndex];
 
                             //if the id is found in the sheet, repopulate the whole card record in the sheet
                             if ($webhookCardId == $SheetCardid) {

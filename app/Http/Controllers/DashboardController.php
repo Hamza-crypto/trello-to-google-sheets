@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Rap2hpoutre\FastExcel\FastExcel;
 use OpenSpout\Common\Entity\Style\Style;
-
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -14,9 +15,13 @@ class DashboardController extends Controller
     {
         $apiEndpoint = 'https://api.trello.com/1/members/me/boards';
 
+        $apiKey = env('TRELLO_API_KEY');
+        $accessToken = env('TRELLO_ACCESS_TOKEN');
+
+        //parameters for api call
         $queryParameters = [
-            'key' => '3a485c0c4218c02d868a0dbbd89e68a0',
-            'token' => 'ATTA3361530c90d0c67aad38b12b462142ea8a83f6fb3e55c91d0f7ba92610d213860CC4158C',
+            'key' => $apiKey,
+            'token' => $accessToken,
         ];
 
         $response = Http::get($apiEndpoint, $queryParameters);
@@ -47,9 +52,13 @@ class DashboardController extends Controller
 
         $apiEndpoint = 'https://api.trello.com/1/boards/' . $boardId . '/lists';
 
+        $apiKey = env('TRELLO_API_KEY');
+        $accessToken = env('TRELLO_ACCESS_TOKEN');
+
+        //parameters for api call
         $queryParameters = [
-            'key' => '3a485c0c4218c02d868a0dbbd89e68a0', // Replace with your Trello API key
-            'token' => 'ATTA3361530c90d0c67aad38b12b462142ea8a83f6fb3e55c91d0f7ba92610d213860CC4158C', // Replace with your Trello access token
+            'key' => $apiKey,
+            'token' => $accessToken,
         ];
 
         $lists = Http::get($apiEndpoint, $queryParameters);
@@ -96,14 +105,20 @@ class DashboardController extends Controller
                                 $sheat[0][$id] = $data['name'];
                             }
 
-                            //return $sheat[0];
 
                             //sorting short strings to long
                             usort($sheat[0], function ($a, $b) {
                                 return strlen($a) - strlen($b);
                             });
 
+                            //add "Card Name" at the start
                             array_unshift($sheat[0], "Card Name");
+
+                            // Add "Card Id" column at the end
+                            $sheat[0][] = "Card Id";
+
+                            //return $sheat[0];
+
                         }
 
                         //initializing row in which check list will be placed
@@ -154,9 +169,11 @@ class DashboardController extends Controller
                             //store the card name 
                             if ($atleatOneItemCheck === true) {
                                 $cardName = $card['name'];
-                                $dardId = $card['id'];
+                                $cardId = $card['id'];
                                 $CardNameCellIndex = array_search(strtolower("Card Name"), array_map('strtolower', $sheat[0]));
-                                $rowData[$CardNameCellIndex] = $cardName . "//" . $dardId;
+                                $rowData[$CardNameCellIndex] = $cardName;
+                                $CardIdCellIndex = array_search(strtolower("Card Id"), array_map('strtolower', $sheat[0]));
+                                $rowData[$CardIdCellIndex] = $cardId;
                             }
                         }
 

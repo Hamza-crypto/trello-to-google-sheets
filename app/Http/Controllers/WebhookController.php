@@ -233,17 +233,3 @@ class WebhookController extends Controller
 }
 
 
-
-
-
-//....................... request to create webhook on webhook.site...................................
-// λ curl -X POST ^ 
-// -H "Content-Type: application/json" ^ 
-// -d "{\"key\": \"3a485c0c4218c02d868a0dbbd89e68a0\",
-//     \"callbackURL\": \"https://webhook.site/ff4a4824-249e-45e9-9475-5f5b3c8da3d5\",
-//     \"idModel\":\"64e79e01e1553c261d3b7a6c\",
-//     \"description\": \"My board webhook for updating card in the sheet\"}" ^
-//     "https://api.trello.com/1/tokens/ATTA3361530c90d0c67aad38b12b462142ea8a83f6fb3e55c91d0f7ba92610d213860CC4158C/webhooks/"
-
-//..........................response.......................................
-//{"id":"651cf32d0a3330789485703c","description":"My board webhook for updating card in the sheet","idModel":"64e79e01e1553c261d3b7a6c","callbackURL":"https://webhook.site/ff4a4824-249e-45e9-9475-5f5b3c8da3d5","active":true,"consecutiveFailures":0,"firstConsecutiveFailDate":null}
