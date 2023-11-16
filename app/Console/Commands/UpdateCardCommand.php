@@ -37,7 +37,7 @@ class UpdateCardCommand extends Command
         $lastExecution = LastExecutionTimestamp::latest('id')->first();
 
         if (
-            $lastExecution 
+            $lastExecution
             // &&
             // Carbon::now()->diffInMinutes($lastExecution->last_execution) >= 1 &&
             // Carbon::now()->diffInMinutes($lastExecution->last_execution) < 2
@@ -160,7 +160,7 @@ class UpdateCardCommand extends Command
                     //check for card record in the sheet, if record is present update it
                     foreach ($rows as $index => $row) {
                         if (isset($row[$CardIdColIndex])) {
-                            
+
                             $SheetCardid = $row[$CardIdColIndex];
 
                             //if the id is found in the sheet, repopulate the whole card record in the sheet
@@ -196,9 +196,10 @@ class UpdateCardCommand extends Command
                 }
 
                 $processedCardIds[] = $webhookCardId;
+                Log::info('Processed pending task for webhook card IDs: ', $processedCardIds);
             }
 
-            Log::info('Processed pending task for webhook card IDs: ', $processedCardIds);
+
 
             $this->info('Command executed successfully hahahahha.');
         } else {
