@@ -33,7 +33,7 @@ class DashboardController extends Controller
             // Pass the data to the view
             return view('Admin_dashboard.dashboard', ['responseData' => $responseData]);
 
-            // return response()->json($responseData);
+        // return response()->json($responseData);
         } else {
             return response()->json(['error' => 'Failed to fetch data from the API'], $response->status());
         }
@@ -41,19 +41,16 @@ class DashboardController extends Controller
 
     public function FetchLists(Request $request)
     {
-        $boardId = $request->input('shortLink');
-        //initializing sheat 
-        $sheat = [];
+        $boardId = env('BOARD_ID');
 
-
-
+        $sheet = [];
         //..................................... fetching Lists.........................
 
 
-        $apiEndpoint = 'https://api.trello.com/1/boards/' . $boardId . '/lists';
+        $apiEndpoint = sprintf("%s/boards/%s/lists", env('TRELLO_API_URL'), $boardId, '/lists');
 
         $apiKey = env('TRELLO_API_KEY');
-        $accessToken = env('TRELLO_ACCESS_TOKEN');
+        $accessToken = env('TRELLO_API_TOKEN');
 
         //parameters for api call
         $queryParameters = [
@@ -61,12 +58,16 @@ class DashboardController extends Controller
             'token' => $accessToken,
         ];
 
-        $lists = Http::get($apiEndpoint, $queryParameters);
+        try {
+            $lists = Http::get($apiEndpoint, $queryParameters);
 
-        if ($lists->successful()) {
-            $listsData = $lists->json();
-        } else {
-            return response()->json(['error' => 'Failed to fetch data from the API'], $lists->status());
+            if ($lists->successful()) {
+                $listsData = $lists->json();
+            } else {
+                return response()->json(['error' => 'Failed to fetch data from the API'], $lists->status());
+            }
+        } catch(\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
         }
 
         //.....................................fetching Cards....................................
@@ -74,7 +75,7 @@ class DashboardController extends Controller
         $checkListsData = [];
         foreach ($listsData as $list) {
 
-            $apiEndpoint = 'https://api.trello.com/1/lists/' . $list['id'] . '/cards';
+            $apiEndpoint = sprintf("%s/lists/%s/cards", env('TRELLO_API_URL'), $list['id']);
 
             $Cards = Http::get($apiEndpoint, $queryParameters);
 
@@ -85,7 +86,7 @@ class DashboardController extends Controller
 
 
                 foreach ($cardsData as $card) {
-                    $apiEndpoint = 'https://api.trello.com/1/cards/' . $card['id'] . '/checklists';
+                    $apiEndpoint = sprintf("%s/cards/%s/checklists", env('TRELLO_API_URL'), $card['id']);
                     $checkLists = Http::get($apiEndpoint, $queryParameters);
 
                     if ($checkLists->successful()) {
@@ -94,30 +95,28 @@ class DashboardController extends Controller
 
                         //....................fetching checked data for excel sheat...............
 
-
-
                         //initializing header
-                        if (!isset($sheat[0])) {
-                            $sheat[0] = []; // Initialize $sheat[0] as an empty array
+                        if (!isset($sheet[0])) {
+                            $sheet[0] = []; // Initialize $sheet[0] as an empty array
 
                             foreach ($checkListsData as $index => $data) {
                                 $id = $index;
-                                $sheat[0][$id] = $data['name'];
+                                $sheet[0][$id] = $data['name'];
                             }
 
 
                             //sorting short strings to long
-                            usort($sheat[0], function ($a, $b) {
+                            usort($sheet[0], function ($a, $b) {
                                 return strlen($a) - strlen($b);
                             });
 
                             //add "Card Name" at the start
-                            array_unshift($sheat[0], "Card Name");
+                            array_unshift($sheet[0], "Card Name");
 
                             // Add "Card Id" column at the end
-                            $sheat[0][] = "Card Id";
+                            $sheet[0][] = "Card Id";
 
-                            //return $sheat[0];
+                            //return $sheet[0];
 
                         }
 
@@ -132,7 +131,7 @@ class DashboardController extends Controller
                             $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $name);
                             $cleanedHeaderRow = array_map(function ($str) {
                                 return preg_replace('/[^a-zA-Z0-9]/', '', $str);
-                            }, $sheat[0]);
+                            }, $sheet[0]);
 
                             $cellIndex = array_search(strtolower($cleanedName), array_map('strtolower', $cleanedHeaderRow));
 
@@ -166,33 +165,33 @@ class DashboardController extends Controller
                             //store celldata in the rowData
                             $rowData[$cellIndex] = $cellData;
 
-                            //store the card name 
+                            //store the card name
                             if ($atleatOneItemCheck === true) {
                                 $cardName = $card['name'];
                                 $cardId = $card['id'];
-                                $CardNameCellIndex = array_search(strtolower("Card Name"), array_map('strtolower', $sheat[0]));
+                                $CardNameCellIndex = array_search(strtolower("Card Name"), array_map('strtolower', $sheet[0]));
                                 $rowData[$CardNameCellIndex] = $cardName;
-                                $CardIdCellIndex = array_search(strtolower("Card Id"), array_map('strtolower', $sheat[0]));
+                                $CardIdCellIndex = array_search(strtolower("Card Id"), array_map('strtolower', $sheet[0]));
                                 $rowData[$CardIdCellIndex] = $cardId;
                             }
                         }
 
-                        //store rowData in the $sheat
-                        $sheat[] = $rowData;
+                        //store rowData in the $sheet
+                        $sheet[] = $rowData;
                     } else {
-                        return response()->json(['error' => 'Failed to fetch data from the API'], $checkLists->status());
+                        return response()->json(['error' => 'Failed to fetch data from the API checklist'], $checkLists->status());
                     }
                 }
             } else {
-                return response()->json(['error' => 'Failed to fetch data from the API'], $Cards->status());
+                return response()->json(['error' => 'Failed to fetch data from the API cards'], $Cards->status());
             }
         }
 
-        //return $sheat;
+        //return $sheet;
 
         //..........................structuring the sheat data........................................
 
-        $structuredSheat = $this->structure($sheat);
+        $structuredSheat = $this->structure($sheet);
 
         //...........................styling...................................
 
@@ -200,9 +199,9 @@ class DashboardController extends Controller
 
         $rows_style = (new Style())->setFontSize(12);
 
-        $filePath = storage_path('app/temp/sheat.xlsx');
-        $excelFile = new FastExcel($structuredSheat);
-        $excelFile->export($filePath);
+        // $filePath = storage_path('app/temp/sheet.xlsx');
+        // $excelFile = new FastExcel($structuredSheat);
+        // $excelFile->export($filePath);
         //return $structuredSheat;
 
         //return $excelFile;
@@ -210,7 +209,7 @@ class DashboardController extends Controller
         return (new FastExcel($structuredSheat))
             ->headerStyle($header_style)
             ->rowsStyle($rows_style)
-            ->download('sheat.xlsx');
+            ->download('sheet.xlsx');
     }
 
     private function isAllNotNull($array)
@@ -224,14 +223,14 @@ class DashboardController extends Controller
     }
 
 
-    private function structure($sheat)
+    private function structure($sheet)
     {
         // Get the maximum number of columns based on the header row
-        $maxColumns = count($sheat[0]);
+        $maxColumns = count($sheet[0]);
 
         // Iterate through the existing data to structure the data
 
-        foreach ($sheat as $row) {
+        foreach ($sheet as $row) {
             // Initialize a new row with empty values for all columns
             $newRow = array_fill(0, $maxColumns, null);
 

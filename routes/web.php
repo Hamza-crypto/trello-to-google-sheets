@@ -24,7 +24,7 @@ use App\Http\Controllers\WebhookController;
 
 Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard');
 
-Route::post('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fetchData');
+Route::get('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fetchData');
 
 Route::get('/accessSheet', [GoogleSheetController::class, 'index'])->name('accessSheet');
 
