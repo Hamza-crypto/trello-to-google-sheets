@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // Schedule the UpdateCardCommand to run every 2 minutes
-        $schedule->command('app:update-card-command')->everyTwoMinutes();
+        $schedule->command('app:update-card-command')->everyMinute();
         $schedule->command('app:test')->everyTwoMinutes();
     }
 

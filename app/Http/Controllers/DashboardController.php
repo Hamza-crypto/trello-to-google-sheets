@@ -148,7 +148,6 @@ class DashboardController extends Controller
 
                                 if ($checkItem['state'] == "complete") {
                                     $atleatOneItemCheck = true;
-                                     dump($checkItem);
                                     if (strtolower($cleanedName) == strtolower("NFPA80FAILURES")) {
                                         $value = $checkItem['name'];
                                         // Use preg_match to extract the number before the dot
@@ -179,7 +178,7 @@ class DashboardController extends Controller
                                 $rowData[$CardIdCellIndex] = $cardId;
                             }
                         }
-                        dd('d');
+
 
                         //store rowData in the $sheet
                         $sheet[] = $rowData;
