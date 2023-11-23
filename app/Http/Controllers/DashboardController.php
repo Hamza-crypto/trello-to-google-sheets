@@ -73,6 +73,7 @@ class DashboardController extends Controller
         //.....................................fetching Cards....................................
 
         $checkListsData = [];
+        $count = 1;
         foreach ($listsData as $list) {
 
             $apiEndpoint = sprintf("%s/lists/%s/cards", env('TRELLO_API_URL'), $list['id']);
@@ -86,6 +87,8 @@ class DashboardController extends Controller
 
 
                 foreach ($cardsData as $card) {
+                    dump( "Card Name: " . $card['name']);
+
                     $apiEndpoint = sprintf("%s/cards/%s/checklists", env('TRELLO_API_URL'), $card['id']);
                     $checkLists = Http::get($apiEndpoint, $queryParameters);
 
@@ -126,7 +129,7 @@ class DashboardController extends Controller
                         //get each checkList data in the card i.e "name" in each array of card
                         foreach ($checkListsData as $index => $data) {
                             $name = $data['name'];
-
+                            dump($name);
                             // Remove non-alphanumeric characters from $name and header row
                             $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $name);
                             $cleanedHeaderRow = array_map(function ($str) {
@@ -142,9 +145,10 @@ class DashboardController extends Controller
                             $atleatOneItemCheck = false;
                             //$id = null;
                             foreach ($checkItems as $checkItem) {
+
                                 if ($checkItem['state'] == "complete") {
                                     $atleatOneItemCheck = true;
-
+                                     dump($checkItem);
                                     if (strtolower($cleanedName) == strtolower("NFPA80FAILURES")) {
                                         $value = $checkItem['name'];
                                         // Use preg_match to extract the number before the dot
@@ -175,6 +179,7 @@ class DashboardController extends Controller
                                 $rowData[$CardIdCellIndex] = $cardId;
                             }
                         }
+                        dd('d');
 
                         //store rowData in the $sheet
                         $sheet[] = $rowData;
@@ -186,7 +191,7 @@ class DashboardController extends Controller
                 return response()->json(['error' => 'Failed to fetch data from the API cards'], $Cards->status());
             }
         }
-
+        return "";
         //return $sheet;
 
         //..........................structuring the sheat data........................................
@@ -205,6 +210,8 @@ class DashboardController extends Controller
         //return $structuredSheat;
 
         //return $excelFile;
+
+        dump('File Downloaded successfully');
 
         return (new FastExcel($structuredSheat))
             ->headerStyle($header_style)

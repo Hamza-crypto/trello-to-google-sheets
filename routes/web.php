@@ -26,7 +26,7 @@ Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard'
 
 Route::get('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fetchData');
 
-Route::get('/accessSheet', [GoogleSheetController::class, 'index'])->name('accessSheet');
+// Route::get('/accessSheet', [GoogleSheetController::class, 'index'])->name('accessSheet');
 
 Route::get('logs', [LogViewerController::class, 'index']);
 

@@ -33,22 +33,18 @@ class UpdateCardCommand extends Command
      */
     public function handle()
     {
-        // Check the last execution timestamp in the database or file
-        $lastExecution = LastExecutionTimestamp::latest('id')->first();
+            // Get pending tasks from webhook_tasks table
+            $pendingTasks = WebhookTask::where('status', 'pending')->get();
 
-        if (
-            $lastExecution
-            // &&
-            // Carbon::now()->diffInMinutes($lastExecution->last_execution) >= 1 &&
-            // Carbon::now()->diffInMinutes($lastExecution->last_execution) < 2
-        ) {
-            // Execute your logic here
-
+            //if no pending task found, return
+            if (count($pendingTasks) == 0) {
+                $this->info('No pending tasks found.');
+                return;
+            }
 
             //accessing sheet
             $spreadsheetId = env('GOOGLE_SPREADSHEET_ID');
             $rows = Sheets::spreadsheet($spreadsheetId)->sheet('sheet1')->all();
-
 
             // Extract the header (first row) from the sheet data
             $header = [];
@@ -57,19 +53,14 @@ class UpdateCardCommand extends Command
             }
 
             Log::info($header);
-            $apiKey = env('TRELLO_API_KEY');
-            $accessToken = env('TRELLO_ACCESS_TOKEN');
 
             //parameters for api call
             $queryParameters = [
-                'key' => $apiKey,
-                'token' => $accessToken,
+                'key' => env('TRELLO_API_KEY'),
+                'token' => env('TRELLO_ACCESS_TOKEN')
             ];
 
-            // Get pending tasks from webhook_tasks table
-            $pendingTasks = WebhookTask::where('status', 'pending')->get();
             Log::info($pendingTasks);
-
 
             // for each pending card id in the database
             foreach ($pendingTasks as $task) {
@@ -82,7 +73,8 @@ class UpdateCardCommand extends Command
                 //...............................................................
 
 
-                $apiEndpoint = 'https://api.trello.com/1/cards/' . $webhookCardId . '/checklists';
+                $apiEndpoint = sprintf("%s/cards/%s/checklists", 'https://api.trello.com/1', $webhookCardId);
+
                 $checkLists = Http::get($apiEndpoint, $queryParameters);
 
 
@@ -202,8 +194,6 @@ class UpdateCardCommand extends Command
 
 
             $this->info('Command executed successfully hahahahha.');
-        } else {
-            Log::info('Command skipped.');
-        }
+
     }
 }
