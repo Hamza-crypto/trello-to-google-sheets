@@ -118,7 +118,7 @@ class UpdateCardCommand extends Command
                                         if (strtolower($cleanedName) == strtolower("NFPA80FAILURES")) {
                                             $value = $checkItem['name'];
                                             // Use preg_match to extract the number before the dot
-                                            preg_match('/\*\*(\d+)\./', $value, $matches);
+                                            preg_match('/\d+/', $value, $matches);
                                             $checkItemName = $matches[1];
                                         } else {
                                             $checkItemName = $checkItem['name'];
