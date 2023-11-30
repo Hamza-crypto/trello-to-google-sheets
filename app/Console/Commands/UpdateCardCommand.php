@@ -168,7 +168,7 @@ class UpdateCardCommand extends Command
                                 $rangeToUpdate = 'Sheet1!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
 
                                 Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($rangeToUpdate)->update([$newRecord]);
-                                dump($newRecord);
+
                                 // Set $cardExists to true to indicate that the card already exists
                                 $cardUpdated = true;
                                 break;
@@ -187,7 +187,10 @@ class UpdateCardCommand extends Command
                     }
 
                     if ($cardCreated || $cardUpdated) {
-                        // $task->update(['status' => 'completed']);
+                        WebhookTask::where('status', 'pending')->where('webhook_card_id', $task->webhook_card_id)->update([
+                            'status' => 'completed'
+                        ]);
+                        $task->update(['status' => 'completed']);
                     }
                 }
 
