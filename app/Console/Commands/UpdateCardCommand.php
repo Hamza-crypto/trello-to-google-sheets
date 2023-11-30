@@ -34,7 +34,7 @@ class UpdateCardCommand extends Command
     public function handle()
     {
             // Get pending tasks from webhook_tasks table
-            $pendingTasks = WebhookTask::where('status', 'pending')->get();
+            $pendingTasks = WebhookTask::where('status', 'pending')->take(5)->get();
 
             //if no pending task found, return
             if (count($pendingTasks) == 0) {
