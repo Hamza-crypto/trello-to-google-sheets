@@ -12,7 +12,7 @@ class WebhookController extends Controller
 
     public function updateBoard(Request $request)
     {
-        app('log')->channel('api')->info($request->all());
+        // app('log')->channel('api')->info($request->all());
         // Get the JSON data from the request
         $response = $request->json()->all();
 
