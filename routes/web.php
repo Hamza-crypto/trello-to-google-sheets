@@ -22,7 +22,7 @@ Route::get('/test', function () {
     Artisan::call('app:update-card-command');
 });
 
-Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard');
+// Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard');
 
 Route::get('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fetchData');
 

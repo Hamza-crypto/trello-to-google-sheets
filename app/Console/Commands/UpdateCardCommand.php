@@ -110,8 +110,9 @@ class UpdateCardCommand extends Command
                                 $cellData = "";
 
                                 //get each checkItems array in the card checklist that will be the cell values
-
+                                $nfpa_80_failures = [];
                                 foreach ($checkItems as $checkItem) {
+
                                     if ($checkItem['state'] == "complete") {
                                         $atleatOneItemCheck = true;
 
@@ -119,7 +120,10 @@ class UpdateCardCommand extends Command
                                             $value = $checkItem['name'];
                                             // Use preg_match to extract the number before the dot
                                             preg_match('/\d+/', $value, $matches);
-                                            $checkItemName = $matches[0];
+
+                                            $nfpa_80_failures[] = $matches[0];
+                                            $checkItemName = implode(',', $nfpa_80_failures) ;
+
                                         } else {
                                             $checkItemName = $checkItem['name'];
                                         }
@@ -164,7 +168,7 @@ class UpdateCardCommand extends Command
                                 $rangeToUpdate = 'Sheet1!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
 
                                 Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($rangeToUpdate)->update([$newRecord]);
-
+                                dump($newRecord);
                                 // Set $cardExists to true to indicate that the card already exists
                                 $cardUpdated = true;
                                 break;
@@ -183,7 +187,7 @@ class UpdateCardCommand extends Command
                     }
 
                     if ($cardCreated || $cardUpdated) {
-                        $task->update(['status' => 'completed']);
+                        // $task->update(['status' => 'completed']);
                     }
                 }
 
