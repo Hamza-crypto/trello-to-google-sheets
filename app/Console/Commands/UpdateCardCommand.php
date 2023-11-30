@@ -119,7 +119,7 @@ class UpdateCardCommand extends Command
                                             $value = $checkItem['name'];
                                             // Use preg_match to extract the number before the dot
                                             preg_match('/\d+/', $value, $matches);
-                                            $checkItemName = $matches[1];
+                                            $checkItemName = $matches[0];
                                         } else {
                                             $checkItemName = $checkItem['name'];
                                         }

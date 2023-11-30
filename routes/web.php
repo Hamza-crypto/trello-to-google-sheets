@@ -18,9 +18,9 @@ use App\Http\Controllers\WebhookController;
 |
 */
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
+Route::get('/test', function () {
+    Artisan::call('app:update-card-command');
+});
 
 Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard');
 
