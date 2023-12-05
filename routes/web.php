@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleSheetController;
+use App\Http\Controllers\TrellController;
 use Illuminate\Support\Facades\Artisan;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 use App\Http\Controllers\WebhookController;
@@ -18,13 +19,23 @@ use App\Http\Controllers\WebhookController;
 |
 */
 
-Route::get('/test', function () {
+Route::get('/update-card', function () {
     Artisan::call('app:update-card-command');
+});
+
+Route::get('/test', function () {
+    $trello = new TrellController();
+    $filePath = 'public/HARDWARE_NEEDED.json';
+    $mapped_index = $trello->createPositionIndexMap($filePath);
+
+    $indexForPos34109 = $mapped_index[51347];
+    echo $indexForPos34109; // Output: 1
 });
 
 // Route::get('/', [DashboardController::class, 'ShowDashboard'])->name('dashboard');
 
 Route::get('/fetch-data', [DashboardController::class, 'FetchLists'])->name('fetchData');
+Route::get('/import', [DashboardController::class, 'import'])->name('import');
 
 // Route::get('/accessSheet', [GoogleSheetController::class, 'index'])->name('accessSheet');
 

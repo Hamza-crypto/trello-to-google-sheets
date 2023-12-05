@@ -8,6 +8,8 @@ use Rap2hpoutre\FastExcel\FastExcel;
 use OpenSpout\Common\Entity\Style\Style;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\CheckItemsExport;
 
 class DashboardController extends Controller
 {
@@ -38,6 +40,127 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Failed to fetch data from the API'], $response->status());
         }
     }
+
+    public function import(Request $request)
+    {
+        $boardId = env('BOARD_ID');
+
+        $trello = new TrellController();
+        $lists = $trello->getLists($boardId);
+
+        $data = collect();
+
+        $special_column_names = [
+            'HARDWARE NEEDED - COURSE OF ACTION',
+            'NFPA80 FAILURES',
+            'ADJUSTMENTS',
+            'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)',
+        ];
+
+        // These indexes will perform quick searches on the checklist items (when multiple checklist items are selected)
+        $hardware_needed_mapped_index = $trello->createPositionIndexMap('public/HARDWARE_NEEDED.json');
+        $nfpa80_mapped_index = $trello->createPositionIndexMap('public/NFPA80_FAILURES.json');
+        $adjustments_mapped_index = $trello->createPositionIndexMap('public/ADJUSTMENTS.json');
+        $additional_nfpa80_mapped_index = $trello->createPositionIndexMap('public/ADDITIONAL_NFPA80.json');
+
+        $cards_count = 1;
+        foreach($lists as $list) {
+            $cards = $trello->getCards($list['id']);
+            foreach($cards as $card) {
+                $checkLists = $trello->getCheckLists($card['id']);
+                $rowData = [
+                    'Card Name' => trim($card['name']),
+                    'Card ID' => trim($card['id']),
+                ];
+                foreach($checkLists as $checkList) {
+                    $checklistName = trim($checkList['name']);
+                    $rowData[$checklistName] = '';
+
+                    //If this checklist item contains special column name, then we will use the mapped index to get the index number
+                    if (in_array($checklistName, $special_column_names)) {
+                        if($checklistName == 'HARDWARE NEEDED - COURSE OF ACTION') {
+                            $mapped_index = $hardware_needed_mapped_index;
+                        } elseif($checklistName == 'NFPA80 FAILURES') {
+                            $mapped_index = $nfpa80_mapped_index;
+                        } elseif($checklistName == 'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)') {
+                            $mapped_index = $additional_nfpa80_mapped_index;
+                        } elseif($checklistName == 'ADJUSTMENTS') {
+                            $mapped_index = $adjustments_mapped_index;
+                        }
+
+                        $selectedItems = [];
+
+                        foreach ($checkList['checkItems'] as $index => $checkItem) {
+                            if ($checkItem['state'] == "complete") {
+                                $selected_checklist_sequence_number = $mapped_index[$checkItem['pos']] + 1; // Put pos value inside mapped_index
+                                $selectedItems[] = $selected_checklist_sequence_number;
+                            }
+                        }
+
+                        // Join selected item index numbers with commas
+                        $rowData[$checklistName] = implode(',', $selectedItems);
+                    } else {
+                        foreach ($checkList['checkItems'] as $checkItem) {
+                            if ($checkItem['state'] == "complete") {
+                                $rowData[$checklistName] .= $checkItem['name'] . ', ';
+                            }
+                        }
+
+                        $rowData[$checklistName] = rtrim($rowData[$checklistName], ', ');
+                    }
+
+
+                }
+                $data->push($rowData);
+                $cards_count++;
+                // if($cards_count > 2) {
+                //     break;
+                // }
+            }
+
+            break;
+
+        }
+
+        $favoriteColumns = [
+            "Card Name",
+            "ID#",
+            "WING",
+            "FLOOR",
+            "DF#",
+            "HANDING",
+            "PRIORITY",
+            "DOOR RATING",
+            "FRAME RATING",
+            "DOOR MATERIAL",
+            "NFPA80 FAILURES",
+            "HOURS TO REPAIR",
+            "LOCATION DESCRIPTION",
+            "PASS / FAIL / STATUS",
+            "HARDWARE NEEDED - COURSE OF ACTION",
+            "DOOR REPLACEMENT (NOT INCLUDED IN REPORT)",
+            "ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)",
+            "ADJUSTMENTS",
+            "Card ID"
+        ];
+
+        $dataArray = $data->toArray();
+
+
+        $sortedData = array_map(function ($item) use ($favoriteColumns) {
+            $orderedItem = [];
+
+            foreach ($favoriteColumns as $column) {
+                $orderedItem[$column] = $item[$column];
+            }
+
+            return $orderedItem;
+        }, $dataArray);
+
+        return (new FastExcel($sortedData))->download('file.xlsx');
+
+    }
+
 
     public function FetchLists(Request $request)
     {
@@ -73,8 +196,12 @@ class DashboardController extends Controller
         //.....................................fetching Cards....................................
 
         $checkListsData = [];
-        $count = 1;
+        $list_count = 1;
         foreach ($listsData as $list) {
+
+            if($list['id'] != '6554f1dc0b651fe1e6c68eba') {
+                continue;
+            }
 
             $apiEndpoint = sprintf("%s/lists/%s/cards", env('TRELLO_API_URL'), $list['id']);
 
@@ -85,9 +212,9 @@ class DashboardController extends Controller
 
                 //..........................fetching each card check lists....................
 
-
+                $card_count = 1;
                 foreach ($cardsData as $card) {
-                    dump( "Card Name: " . $card['name']);
+                    // dump( "Card Name: " . $card['name']);
 
                     $apiEndpoint = sprintf("%s/cards/%s/checklists", env('TRELLO_API_URL'), $card['id']);
                     $checkLists = Http::get($apiEndpoint, $queryParameters);
@@ -129,7 +256,7 @@ class DashboardController extends Controller
                         //get each checkList data in the card i.e "name" in each array of card
                         foreach ($checkListsData as $index => $data) {
                             $name = $data['name'];
-                            dump($name);
+                            // dump($name);
                             // Remove non-alphanumeric characters from $name and header row
                             $cleanedName = preg_replace('/[^a-zA-Z0-9]/', '', $name);
                             $cleanedHeaderRow = array_map(function ($str) {
@@ -144,6 +271,7 @@ class DashboardController extends Controller
                             //get each checkItems array in the card checklist that will be the cell values
                             $atleatOneItemCheck = false;
                             //$id = null;
+                            $nfpa_80_failures = [];
                             foreach ($checkItems as $checkItem) {
 
                                 if ($checkItem['state'] == "complete") {
@@ -152,7 +280,8 @@ class DashboardController extends Controller
                                         $value = $checkItem['name'];
                                         // Use preg_match to extract the number before the dot
                                         preg_match('/\d+/', $value, $matches);
-                                        $checkItemName = $matches[1];
+                                        $nfpa_80_failures[] = $matches[0];
+                                        $checkItemName = implode(',', $nfpa_80_failures) ;
                                     } else {
                                         $checkItemName = $checkItem['name'];
                                     }
@@ -185,13 +314,21 @@ class DashboardController extends Controller
                     } else {
                         return response()->json(['error' => 'Failed to fetch data from the API checklist'], $checkLists->status());
                     }
+
+                    $card_count++;
+                    if($card_count > 2) {
+                        break;
+                    }
                 }
             } else {
                 return response()->json(['error' => 'Failed to fetch data from the API cards'], $Cards->status());
             }
+
+
+            // break;
         }
-        return "";
-        //return $sheet;
+        // return "";
+        // return $sheet;
 
         //..........................structuring the sheat data........................................
 
@@ -210,13 +347,14 @@ class DashboardController extends Controller
 
         //return $excelFile;
 
-        dump('File Downloaded successfully');
+        // dump('File Downloaded successfully');
 
         return (new FastExcel($structuredSheat))
             ->headerStyle($header_style)
             ->rowsStyle($rows_style)
             ->download('sheet.xlsx');
     }
+
 
     private function isAllNotNull($array)
     {
