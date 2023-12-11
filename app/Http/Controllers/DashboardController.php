@@ -59,7 +59,6 @@ class DashboardController extends Controller
         $nfpa80_mapped_index = $trello->createPositionIndexMap('public/NFPA80_FAILURES.json');
         $additional_nfpa80_mapped_index = $trello->createPositionIndexMap('public/ADDITIONAL_NFPA80.json');
 
-        dd($nfpa80_mapped_index);
         $cards_count = 1;
         foreach($lists as $list) {
             if ($list['id'] !== $listId) {
