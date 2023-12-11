@@ -6,10 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Rap2hpoutre\FastExcel\FastExcel;
 use OpenSpout\Common\Entity\Style\Style;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\CheckItemsExport;
+use App\Models\Card;
 
 class DashboardController extends Controller
 {
@@ -41,32 +38,45 @@ class DashboardController extends Controller
         }
     }
 
-    public function import(Request $request)
+    public function export(Request $request)
     {
         $boardId = env('BOARD_ID');
+        $listId = $request->query('list_id');
 
-        $trello = new TrellController();
+        $trello = new TrelloController;
         $lists = $trello->getLists($boardId);
 
         $data = collect();
 
         $special_column_names = [
-            'HARDWARE NEEDED - COURSE OF ACTION',
             'NFPA80 FAILURES',
-            'ADJUSTMENTS',
-            'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)',
+            'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)'
         ];
 
         // These indexes will perform quick searches on the checklist items (when multiple checklist items are selected)
-        $hardware_needed_mapped_index = $trello->createPositionIndexMap('public/HARDWARE_NEEDED.json');
+        // $hardware_needed_mapped_index = $trello->createPositionIndexMap('public/HARDWARE_NEEDED.json');
+        // $adjustments_mapped_index = $trello->createPositionIndexMap('public/ADJUSTMENTS.json');
         $nfpa80_mapped_index = $trello->createPositionIndexMap('public/NFPA80_FAILURES.json');
-        $adjustments_mapped_index = $trello->createPositionIndexMap('public/ADJUSTMENTS.json');
         $additional_nfpa80_mapped_index = $trello->createPositionIndexMap('public/ADDITIONAL_NFPA80.json');
 
         $cards_count = 1;
         foreach($lists as $list) {
+            if ($list['id'] !== $listId) {
+                continue; // Skip to the next list if the ID does not match
+            }
+
             $cards = $trello->getCards($list['id']);
             foreach($cards as $card) {
+
+                if($card['name'] != "TEST CARD ID #3"){
+                    continue;
+                }
+                //check if card already exists in the database
+                $cardExists = Card::where('card_id', $card['id'])->exists();
+                if($cardExists) {
+                    continue;
+                }
+
                 $checkLists = $trello->getCheckLists($card['id']);
                 $rowData = [
                     'Card Name' => trim($card['name']),
@@ -76,24 +86,37 @@ class DashboardController extends Controller
                     $checklistName = trim($checkList['name']);
                     $rowData[$checklistName] = '';
 
+                    $mapped_index = [];
                     //If this checklist item contains special column name, then we will use the mapped index to get the index number
                     if (in_array($checklistName, $special_column_names)) {
-                        if($checklistName == 'HARDWARE NEEDED - COURSE OF ACTION') {
-                            $mapped_index = $hardware_needed_mapped_index;
-                        } elseif($checklistName == 'NFPA80 FAILURES') {
+                        if($checklistName == 'NFPA80 FAILURES') {
                             $mapped_index = $nfpa80_mapped_index;
                         } elseif($checklistName == 'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)') {
                             $mapped_index = $additional_nfpa80_mapped_index;
-                        } elseif($checklistName == 'ADJUSTMENTS') {
-                            $mapped_index = $adjustments_mapped_index;
                         }
 
                         $selectedItems = [];
 
                         foreach ($checkList['checkItems'] as $index => $checkItem) {
                             if ($checkItem['state'] == "complete") {
-                                $selected_checklist_sequence_number = $mapped_index[$checkItem['pos']] + 1; // Put pos value inside mapped_index
-                                $selectedItems[] = $selected_checklist_sequence_number;
+                                try{
+                                    $name = $trello->get_checklist_slug($checkItem['name']);
+                                    $selected_checklist_sequence_number = $mapped_index[$name]; // Put pos value inside mapped_index
+                                    $selectedItems[] = $selected_checklist_sequence_number;
+                                }
+                                catch(\Exception $e) {
+
+                                    Card::create([
+                                        'card_id' => $card['id'],
+                                        'name' => $card['name'],
+                                        'status' => 0,
+                                        'message' => $checkItem['name'],
+                                    ]);
+
+                                    $cards_count++;
+                                    continue;
+                                }
+
                             }
                         }
 
@@ -112,39 +135,21 @@ class DashboardController extends Controller
 
                 }
                 $data->push($rowData);
+
+                // Card::create([
+                //     'card_id' => $card['id'],
+                //     'name' => $card['name'],
+                // ]);
                 $cards_count++;
-                // if($cards_count > 2) {
-                //     break;
-                // }
+                if($cards_count > 70) {
+                    break;
+                }
             }
-
-            break;
-
         }
 
-        $favoriteColumns = [
-            "Card Name",
-            "ID#",
-            "WING",
-            "FLOOR",
-            "DF#",
-            "HANDING",
-            "PRIORITY",
-            "DOOR RATING",
-            "FRAME RATING",
-            "DOOR MATERIAL",
-            "NFPA80 FAILURES",
-            "HOURS TO REPAIR",
-            "LOCATION DESCRIPTION",
-            "PASS / FAIL / STATUS",
-            "HARDWARE NEEDED - COURSE OF ACTION",
-            "DOOR REPLACEMENT (NOT INCLUDED IN REPORT)",
-            "ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)",
-            "ADJUSTMENTS",
-            "Card ID"
-        ];
-
+        $favoriteColumns = $trello->get_favorite_columns();
         $dataArray = $data->toArray();
+
 
 
         $sortedData = array_map(function ($item) use ($favoriteColumns) {
@@ -157,10 +162,10 @@ class DashboardController extends Controller
             return $orderedItem;
         }, $dataArray);
 
-        return (new FastExcel($sortedData))->download('file.xlsx');
+        if(count($sortedData) > 0) return (new FastExcel($sortedData))->download('file.xlsx');
 
+        dd('No data found');
     }
-
 
     public function FetchLists(Request $request)
     {

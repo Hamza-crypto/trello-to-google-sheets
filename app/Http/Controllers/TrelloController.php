@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
-class TrellController extends Controller
+class TrelloController extends Controller
 {
     public function getCheckLists($card_id)
     {
@@ -53,14 +54,43 @@ class TrellController extends Controller
         $checklistArray = json_decode($jsonContent, true);
 
         foreach ($checklistArray as $index => $item) {
-            $positionIndexMap[$item['pos']] = $index;
+            $name = $this->get_checklist_slug($item);
+            $positionIndexMap[$name] = $index + 1;
+
         }
 
         return $positionIndexMap;
     }
 
-    function get_json_file_name()
+    function get_favorite_columns()
     {
+        return [
+            "Card Name",
+            "ID#",
+            "WING",
+            "FLOOR",
+            "DF#",
+            "HANDING",
+            "PRIORITY",
+            "DOOR RATING",
+            "FRAME RATING",
+            "DOOR MATERIAL",
+            "NFPA80 FAILURES",
+            "HOURS TO REPAIR",
+            "LOCATION DESCRIPTION",
+            "PASS / FAIL / STATUS",
+            "HARDWARE NEEDED - COURSE OF ACTION",
+            "DOOR REPLACEMENT (NOT INCLUDED IN REPORT)",
+            "ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)",
+            "ADJUSTMENTS",
+            "Card ID"
+        ];
 
+    }
+
+    //create a function which performs the following operations on string: 1) remove all spaces 2) convert to lowercase 3) make slug
+    function get_checklist_slug($string)
+    {
+        return Str::slug(strtolower(str_replace(' ', '', $string)));
     }
 }
