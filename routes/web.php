@@ -39,7 +39,7 @@ Route::get('reset-all', function () {
     Artisan::call('migrate:fresh --seed');
 });
 
-Route::post('/update/board', [WebhookController::class, 'updateBoard']);
+Route::post('webhook/card/update', [WebhookController::class, 'storeWebhook']);
 
 // This route will help us to create webhook for trello
-Route::match(['head'], '/update/board', [WebhookController::class, 'create_webhook']);
+Route::match(['head'], 'webhook/card/update', [WebhookController::class, 'create_webhook']);

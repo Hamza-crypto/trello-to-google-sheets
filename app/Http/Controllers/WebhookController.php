@@ -7,7 +7,7 @@ use App\Models\Webhook;
 
 class WebhookController extends Controller
 {
-    public function updateBoard(Request $request)
+    public function storeWebhook(Request $request)
     {
         $response = $request->json()->all();
 
