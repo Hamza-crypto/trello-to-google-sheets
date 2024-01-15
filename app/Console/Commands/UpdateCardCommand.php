@@ -23,7 +23,7 @@ class UpdateCardCommand extends Command
         }
 
         $spreadsheetId = env('GOOGLE_SPREADSHEET_ID');
-        $sheet = Sheets::spreadsheet($spreadsheetId)->sheet('sheet1');
+        $sheet = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1');
         $sheet_rows = $sheet->all();
 
         // Extract the header (first row) from the sheet data
@@ -107,7 +107,7 @@ class UpdateCardCommand extends Command
                 }
             }
 
-
+            dump($rowData);
             $all_data->push($rowData);
             $dataArray = $all_data->toArray();
 
