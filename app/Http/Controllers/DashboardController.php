@@ -6,56 +6,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Rap2hpoutre\FastExcel\FastExcel;
 use OpenSpout\Common\Entity\Style\Style;
+use Illuminate\Support\Facades\Log;
+
 use App\Models\Card;
 
 class DashboardController extends Controller
 {
-    public function showDashboard()
-    {
-        $apiEndpoint = 'https://api.trello.com/1/members/me/boards';
-
-        $apiKey = env('TRELLO_API_KEY');
-        $accessToken = env('TRELLO_ACCESS_TOKEN');
-
-        //parameters for api call
-        $queryParameters = [
-            'key' => $apiKey,
-            'token' => $accessToken,
-        ];
-
-        $response = Http::get($apiEndpoint, $queryParameters);
-
-        if ($response->successful()) {
-            $responseData = $response->json();
-
-            //return $responseData;
-            // Pass the data to the view
-            return view('Admin_dashboard.dashboard', ['responseData' => $responseData]);
-
-        // return response()->json($responseData);
-        } else {
-            return response()->json(['error' => 'Failed to fetch data from the API'], $response->status());
-        }
-    }
-
     public function export(Request $request)
     {
+        // dd();
         $boardId = env('BOARD_ID');
         $listId = $request->query('list_id');
 
         $trello = new TrelloController;
         $lists = $trello->getLists($boardId);
+        $favoriteColumns = $trello->get_favorite_columns();
 
         $data = collect();
 
         $special_column_names = [
-            'NFPA80 FAILURES',
-            'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)'
+            'nfpa80 failures',
+            'additional nfpa80 points (not included in report)'
         ];
 
         // These indexes will perform quick searches on the checklist items (when multiple checklist items are selected)
-        // $hardware_needed_mapped_index = $trello->createPositionIndexMap('public/HARDWARE_NEEDED.json');
-        // $adjustments_mapped_index = $trello->createPositionIndexMap('public/ADJUSTMENTS.json');
         $nfpa80_mapped_index = $trello->createPositionIndexMap('public/NFPA80_FAILURES.json');
         $additional_nfpa80_mapped_index = $trello->createPositionIndexMap('public/ADDITIONAL_NFPA80.json');
 
@@ -68,9 +42,6 @@ class DashboardController extends Controller
             $cards = $trello->getCards($list['id']);
             foreach($cards as $card) {
 
-                if($card['name'] != "TEST CARD ID #3"){
-                    continue;
-                }
                 //check if card already exists in the database
                 $cardExists = Card::where('card_id', $card['id'])->exists();
                 if($cardExists) {
@@ -78,26 +49,33 @@ class DashboardController extends Controller
                 }
 
                 $checkLists = $trello->getCheckLists($card['id']);
+
+                if(count($checkLists) < 10) {
+                    break;
+                }
                 $rowData = [
-                    'Card Name' => trim($card['name']),
-                    'Card ID' => trim($card['id']),
+                    'card name' => trim($card['name']),
+                    'card id' => trim($card['id']),
                 ];
                 foreach($checkLists as $checkList) {
-                    $checklistName = trim($checkList['name']);
+                    $checklistName = trim( strtolower($checkList['name']));
                     $rowData[$checklistName] = '';
 
                     $mapped_index = [];
                     //If this checklist item contains special column name, then we will use the mapped index to get the index number
                     if (in_array($checklistName, $special_column_names)) {
-                        if($checklistName == 'NFPA80 FAILURES') {
+                        if($checklistName == 'nfpa80 failures') {
                             $mapped_index = $nfpa80_mapped_index;
-                        } elseif($checklistName == 'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)') {
+                        } elseif($checklistName == 'additional nfpa80 points (not included in report)') {
                             $mapped_index = $additional_nfpa80_mapped_index;
                         }
 
                         $selectedItems = [];
 
                         foreach ($checkList['checkItems'] as $index => $checkItem) {
+                            if(in_array($checkItem['name'], ['building', 'wall rating', 'frame material'])) {
+                                continue;
+                            }
                             if ($checkItem['state'] == "complete") {
                                 try{
                                     $name = $trello->get_checklist_slug($checkItem['name']);
@@ -134,35 +112,43 @@ class DashboardController extends Controller
 
 
                 }
+                Log::info('Card ID', $rowData);
+
                 $data->push($rowData);
 
-                // Card::create([
-                //     'card_id' => $card['id'],
-                //     'name' => $card['name'],
-                // ]);
+                Card::create([
+                    'card_id' => $card['id'],
+                    'name' => $card['name'],
+                ]);
                 $cards_count++;
-                if($cards_count > 70) {
+                if($cards_count > 30) {
                     break;
                 }
             }
         }
 
-        $favoriteColumns = $trello->get_favorite_columns();
         $dataArray = $data->toArray();
 
-
-
-        $sortedData = array_map(function ($item) use ($favoriteColumns) {
+        $cc = "";
+        try{
+            $sortedData = array_map(function ($item) use ($favoriteColumns) {
             $orderedItem = [];
 
             foreach ($favoriteColumns as $column) {
-                $orderedItem[$column] = $item[$column];
+                $cc = $item;
+                $orderedItem[$column] = $item[strtolower($column)];
             }
 
             return $orderedItem;
         }, $dataArray);
 
         if(count($sortedData) > 0) return (new FastExcel($sortedData))->download('file.xlsx');
+        }
+        catch(\Exception $e) {
+            dump($dataArray);
+             dump($cc);
+            dd($e->getMessage());
+        }
 
         dd('No data found');
     }
