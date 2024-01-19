@@ -17,8 +17,8 @@ class UpdateCardCommand extends Command
     {
         $sheet_name = "Sheet1";
 
-        $pendingTasks = Webhook::where('status', 'pending')->take(20)->get();
-
+        $pendingTasks = Webhook::where('status', 'pending')->take(5)->get();
+dd($pendingTasks);
         if (count($pendingTasks) == 0) {
             $this->info('No pending tasks found.');
             return;
@@ -66,6 +66,9 @@ class UpdateCardCommand extends Command
                 'Card ID' => trim($webhookCardId),
             ];
 
+            if($checkLists == null){
+                $task->delete();
+            }
             foreach($checkLists as $checkList) {
                 $checklistName = trim($checkList['name']);
                 $rowData[$checklistName] = '';
