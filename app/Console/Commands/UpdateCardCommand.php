@@ -15,6 +15,8 @@ class UpdateCardCommand extends Command
 
     public function handle()
     {
+        $sheet_name = "Sheet1";
+
         $pendingTasks = Webhook::where('status', 'pending')->take(5)->get();
 
         if (count($pendingTasks) == 0) {
@@ -23,7 +25,7 @@ class UpdateCardCommand extends Command
         }
 
         $spreadsheetId = env('GOOGLE_SPREADSHEET_ID');
-        $sheet = Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1');
+        $sheet = Sheets::spreadsheet($spreadsheetId)->sheet($sheet_name);
         $sheet_rows = $sheet->all();
 
         // Extract the header (first row) from the sheet data
@@ -107,7 +109,6 @@ class UpdateCardCommand extends Command
                 }
             }
 
-            dump($rowData);
             $all_data->push($rowData);
             $dataArray = $all_data->toArray();
 
@@ -127,7 +128,6 @@ class UpdateCardCommand extends Command
             $new_data = array_values($new_data);
             Log::info('new record: ', $new_data);
 
-
             if ($atleatOneItemCheck) {
                 $cardUpdated = false;
                 $cardCreated = false;
@@ -140,7 +140,6 @@ class UpdateCardCommand extends Command
 
                         $card_id_from_sheet = $row[$CardIdColIndex];
 
-
                         if ($webhookCardId != $card_id_from_sheet) {
                             continue;
                         }
@@ -151,10 +150,10 @@ class UpdateCardCommand extends Command
                         //return $SheetCardid. " and name is ". $SheetCardName;
                         // Update the row with the modified data
                         $rowIndex = $index + 2; // Rows are 1-based-indexed in Google Sheets API
-                        $rangeToUpdate = 'Sheet1!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
+                        $rangeToUpdate = $sheet_name . '!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
                         dump('Updating row ' . $rowIndex . ' with new data: ', $new_data);
 
-                        Sheets::spreadsheet($spreadsheetId)->sheet('Sheet1')->range($rangeToUpdate)->update([$new_data]);
+                        Sheets::spreadsheet($spreadsheetId)->sheet($sheet_name)->range($rangeToUpdate)->update([$new_data]);
                         $cardExists = true;
                         // Set $cardExists to true to indicate that the card already exists
                         $cardUpdated = true;
@@ -169,10 +168,12 @@ class UpdateCardCommand extends Command
 
                 dump('Loop broken');
 
-                if ($cardCreated || $cardUpdated) {
-                    $task->update(['status' => 'completed']);
-                }
+                // if ($cardCreated || $cardUpdated) {
+
+                // }
             }
+
+            $task->update(['status' => 'completed']);
         }
 
         $this->info('Command executed successfully hahahahha.');
