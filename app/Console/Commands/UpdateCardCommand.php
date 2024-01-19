@@ -17,7 +17,7 @@ class UpdateCardCommand extends Command
     {
         $sheet_name = "Sheet1";
 
-        $pendingTasks = Webhook::where('status', 'pending')->take(5)->get();
+        $pendingTasks = Webhook::where('status', 'pending')->take(20)->get();
 
         if (count($pendingTasks) == 0) {
             $this->info('No pending tasks found.');
