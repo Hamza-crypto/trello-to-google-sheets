@@ -13,8 +13,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // Schedule the UpdateCardCommand to run every 2 minutes
-        $schedule->command('update:trello-card')->everyThreeMinutes();
-        $schedule->command('app:test')->everyTwoMinutes();
+        $schedule->command('update:trello-card')->everyMinute();
+        // $schedule->command('app:test')->everyTwoMinutes();
     }
 
     /**
