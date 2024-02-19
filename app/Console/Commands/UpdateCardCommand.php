@@ -53,141 +53,142 @@ class UpdateCardCommand extends Command
         // for each pending card id in the database
         foreach ($pendingTasks as $task) {
 
-             try{
-            $cardExists = false;
-            $all_data = collect();
-            $atleatOneItemCheck = false;
+            try{
+                $cardExists = false;
+                $all_data = collect();
+                $atleatOneItemCheck = false;
 
-            $webhookCardId = $task->card_id;
-            $webhookCardName = $task->card_name;
-            dump("Task - $webhookCardName");
+                $webhookCardId = $task->card_id;
+                $webhookCardName = $task->card_name;
+                dump("Task - $webhookCardName");
 
-            //step1..................create the new record...................
-            //...............................................................
+                //step1..................create the new record...................
+                //...............................................................
 
-            $checkLists = $trello->getCheckLists($webhookCardId);
-            $rowData = [
-                'Card Name' => trim($webhookCardName),
-                'Card ID' => trim($webhookCardId),
-            ];
+                $checkLists = $trello->getCheckLists($webhookCardId);
+                $rowData = [
+                    'Card Name' => trim($webhookCardName),
+                    'Card ID' => trim($webhookCardId),
+                ];
 
-            if($checkLists == null){
-                $task->delete();
-            }
-            foreach($checkLists as $checkList) {
-                $checklistName = trim($checkList['name']);
-                $rowData[$checklistName] = '';
+                if($checkLists == null){
+                    $task->delete();
+                }
+                foreach($checkLists as $checkList) {
+                    $checklistName = trim($checkList['name']);
+                    $rowData[$checklistName] = '';
 
-                $mapped_index = [];
-                //If this checklist item contains special column name, then we will use the mapped index to get the index number
-                if (in_array($checklistName, $special_column_names)) {
-                    if($checklistName == 'NFPA80 FAILURES') {
-                        $mapped_index = $nfpa80_mapped_index;
-                    } elseif($checklistName == 'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)') {
-                        $mapped_index = $additional_nfpa80_mapped_index;
+                    $mapped_index = [];
+                    //If this checklist item contains special column name, then we will use the mapped index to get the index number
+                    if (in_array($checklistName, $special_column_names)) {
+                        if($checklistName == 'NFPA80 FAILURES') {
+                            $mapped_index = $nfpa80_mapped_index;
+                        } elseif($checklistName == 'ADDITIONAL NFPA80 POINTS (NOT INCLUDED IN REPORT)') {
+                            $mapped_index = $additional_nfpa80_mapped_index;
+                        }
+
+                        $selectedItems = [];
+
+                        foreach ($checkList['checkItems'] as $index => $checkItem) {
+                            if ($checkItem['state'] == "complete") {
+                                try {
+                                    $name = $trello->get_checklist_slug($checkItem['name']);
+                                    $selected_checklist_sequence_number = $mapped_index[$name]; // Put pos value inside mapped_index
+                                    $selectedItems[] = $selected_checklist_sequence_number;
+                                } catch(\Exception $e) {
+                                    dump($e->getMessage());
+                                    continue;
+                                }
+                                $atleatOneItemCheck = true;
+                            }
+                        }
+
+                        // Join selected item index numbers with commas
+                        $rowData[$checklistName] = implode(',', $selectedItems);
+                    } else {
+                        foreach ($checkList['checkItems'] as $checkItem) {
+                            if ($checkItem['state'] == "complete") {
+
+                                $rowData[$checklistName] .= $checkItem['name'] . ', ';
+                            }
+                        }
+
+                        $rowData[$checklistName] = rtrim($rowData[$checklistName], ', ');
+                    }
+                }
+
+                $all_data->push($rowData);
+                $dataArray = $all_data->toArray();
+
+                $favoriteColumns = $trello->get_favorite_columns();
+
+                $sortedData = array_map(function ($item) use ($favoriteColumns) {
+                    $orderedItem = [];
+
+                    foreach ($favoriteColumns as $column) {
+                        $orderedItem[$column] = $item[$column];
                     }
 
-                    $selectedItems = [];
+                    return $orderedItem;
+                }, $dataArray);
 
-                    foreach ($checkList['checkItems'] as $index => $checkItem) {
-                        if ($checkItem['state'] == "complete") {
-                            try {
-                                $name = $trello->get_checklist_slug($checkItem['name']);
-                                $selected_checklist_sequence_number = $mapped_index[$name]; // Put pos value inside mapped_index
-                                $selectedItems[] = $selected_checklist_sequence_number;
-                            } catch(\Exception $e) {
-                                dump($e->getMessage());
+                $new_data = $sortedData[0];
+                $new_data = array_values($new_data);
+                Log::info('new record: ', $new_data);
+
+                if ($atleatOneItemCheck) {
+                    $cardUpdated = false;
+                    $cardCreated = false;
+
+                    $CardIdColIndex = array_search(strtolower("Card ID"), array_map('strtolower', $header));
+
+                    //check for card record in the sheet, if record is present update it
+                    foreach ($sheet_rows as $index => $row) {
+                        if (isset($row[$CardIdColIndex])) {
+
+                            $card_id_from_sheet = $row[$CardIdColIndex];
+
+                            if ($webhookCardId != $card_id_from_sheet) {
                                 continue;
                             }
-                            $atleatOneItemCheck = true;
+                            $cardCreated = true; // Create new record if card id is not found in the sheet
+                            Log::info('Card ID', (array)$card_id_from_sheet);
+                            //if the id is found in the sheet, repopulate the whole card record in the sheet
+
+                            //return $SheetCardid. " and name is ". $SheetCardName;
+                            // Update the row with the modified data
+                            $rowIndex = $index + 2; // Rows are 1-based-indexed in Google Sheets API
+                            $rangeToUpdate = $sheet_name . '!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
+                            dump('Updating row ' . $rowIndex . ' with new data: ', $new_data);
+
+                            Sheets::spreadsheet($spreadsheetId)->sheet($sheet_name)->range($rangeToUpdate)->update([$new_data]);
+                            $cardExists = true;
+                            // Set $cardExists to true to indicate that the card already exists
+                            $cardUpdated = true;
                         }
                     }
 
-                    // Join selected item index numbers with commas
-                    $rowData[$checklistName] = implode(',', $selectedItems);
-                } else {
-                    foreach ($checkList['checkItems'] as $checkItem) {
-                        if ($checkItem['state'] == "complete") {
-
-                            $rowData[$checklistName] .= $checkItem['name'] . ', ';
-                        }
+                    if (!$cardExists || count($sheet_rows) == 0) {
+                        $sheet->append([$new_data]);
+                        dump('Appending new row with data: ', $new_data);
+                        $cardCreated = true;
                     }
 
-                    $rowData[$checklistName] = rtrim($rowData[$checklistName], ', ');
-                }
-            }
+                    // dump('Loop broken');
 
-            $all_data->push($rowData);
-            $dataArray = $all_data->toArray();
+                    // if ($cardCreated || $cardUpdated) {
 
-            $favoriteColumns = $trello->get_favorite_columns();
-
-            $sortedData = array_map(function ($item) use ($favoriteColumns) {
-                $orderedItem = [];
-
-                foreach ($favoriteColumns as $column) {
-                    $orderedItem[$column] = $item[$column];
+                    // }
                 }
 
-                return $orderedItem;
-            }, $dataArray);
-
-            $new_data = $sortedData[0];
-            $new_data = array_values($new_data);
-            Log::info('new record: ', $new_data);
-
-            if ($atleatOneItemCheck) {
-                $cardUpdated = false;
-                $cardCreated = false;
-
-                $CardIdColIndex = array_search(strtolower("Card ID"), array_map('strtolower', $header));
-
-                //check for card record in the sheet, if record is present update it
-                foreach ($sheet_rows as $index => $row) {
-                    if (isset($row[$CardIdColIndex])) {
-
-                        $card_id_from_sheet = $row[$CardIdColIndex];
-
-                        if ($webhookCardId != $card_id_from_sheet) {
-                            continue;
-                        }
-                        $cardCreated = true; // Create new record if card id is not found in the sheet
-                        Log::info('Card ID', (array)$card_id_from_sheet);
-                        //if the id is found in the sheet, repopulate the whole card record in the sheet
-
-                        //return $SheetCardid. " and name is ". $SheetCardName;
-                        // Update the row with the modified data
-                        $rowIndex = $index + 2; // Rows are 1-based-indexed in Google Sheets API
-                        $rangeToUpdate = $sheet_name . '!A' . $rowIndex . ':Z' . $rowIndex; // Adjust as needed
-                        dump('Updating row ' . $rowIndex . ' with new data: ', $new_data);
-
-                        Sheets::spreadsheet($spreadsheetId)->sheet($sheet_name)->range($rangeToUpdate)->update([$new_data]);
-                        $cardExists = true;
-                        // Set $cardExists to true to indicate that the card already exists
-                        $cardUpdated = true;
-                    }
-                }
-
-                if (!$cardExists || count($sheet_rows) == 0) {
-                    $sheet->append([$new_data]);
-                    dump('Appending new row with data: ', $new_data);
-                    $cardCreated = true;
-                }
-
-                dump('Loop broken');
-
-                // if ($cardCreated || $cardUpdated) {
-
-                // }
-            }
-
-            $task->update(['status' => 'completed']);
+                $task->update(['status' => 'completed']);
+                dump('Status Updated');
 
             }
-        catch(Exception $e){
-            $task->delete();
-            $msg = sprintf("%s - %s - %s", $e->getMessage(), $e->getFile(), $e->getLine());
-            dd($msg);
+            catch(Exception $e){
+                $task->delete();
+                $msg = sprintf("%s - %s - %s", $e->getMessage(), $e->getFile(), $e->getLine());
+                dd($msg);
         }
         }
 
