@@ -6,6 +6,7 @@ use App\Http\Controllers\TrelloController;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use App\Models\Webhook;
+use Exception;
 use Revolution\Google\Sheets\Facades\Sheets;
 
 class UpdateCardCommand extends Command
@@ -15,6 +16,9 @@ class UpdateCardCommand extends Command
 
     public function handle()
     {
+        try{
+
+
         $sheet_name = "Sheet1";
 
         $pendingTasks = Webhook::where('status', 'pending')->take(20)->get();
@@ -180,6 +184,10 @@ class UpdateCardCommand extends Command
         }
 
         $this->info('Command executed successfully hahahahha.');
-
+        }
+        catch(Exception $e){
+            $msg = sprintf("%s - %s - %s", $e->getMessage(), $e->getFile(), $e->getLine());
+            dump($msg);
+        }
     }
 }
