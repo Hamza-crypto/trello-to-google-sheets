@@ -187,7 +187,7 @@ class UpdateCardCommand extends Command
         }
         catch(Exception $e){
             $msg = sprintf("%s - %s - %s", $e->getMessage(), $e->getFile(), $e->getLine());
-            dump($msg);
+            dd($msg);
         }
     }
 }
