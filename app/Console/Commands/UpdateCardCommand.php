@@ -16,7 +16,7 @@ class UpdateCardCommand extends Command
 
     public function handle()
     {
-        try{
+
 
 
         $sheet_name = "Sheet1";
@@ -53,6 +53,7 @@ class UpdateCardCommand extends Command
         // for each pending card id in the database
         foreach ($pendingTasks as $task) {
 
+             try{
             $cardExists = false;
             $all_data = collect();
             $atleatOneItemCheck = false;
@@ -181,13 +182,15 @@ class UpdateCardCommand extends Command
             }
 
             $task->update(['status' => 'completed']);
-        }
 
-        $this->info('Command executed successfully hahahahha.');
-        }
+            }
         catch(Exception $e){
+            $task->delete();
             $msg = sprintf("%s - %s - %s", $e->getMessage(), $e->getFile(), $e->getLine());
             dd($msg);
         }
+        }
+
+        $this->info('Command executed successfully hahahahha.');
     }
 }
